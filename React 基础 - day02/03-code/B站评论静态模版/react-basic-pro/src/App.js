@@ -6,6 +6,8 @@ import classNames from 'classnames'
 import { v4 as uuidv4 } from 'uuid'
 import dayjs from 'dayjs'
 import { useRef } from 'react'
+import axios from 'axios'
+import { useEffect } from 'react'
 /**
  * 评论列表的渲染和操作
  *
@@ -77,17 +79,62 @@ const tabs = [
   { type: 'hot', text: '最热' },
   { type: 'time', text: '最新' },
 ]
+// 封装接口请求hook
+ function useGetlist(){
+     // const [commentList,setCommentList]=useState(_.orderBy(defaultList,'like','desc'))
+  const [commentList,setCommentList]=useState([])
+  useEffect(()=>{
+      async function getlist(){
+        const res=await axios.get('http://localhost:3004/list')
+        setCommentList(res.data)
+      } 
+      getlist()
+  },[])
+  return {commentList,setCommentList}
+ }
+//item组件
+function Item({item,onDel}){
+   return (<div className="reply-item" >
+            {/* 头像 */}
+            <div className="root-reply-avatar">
+              <div className="bili-avatar">
+                <img
+                  className="bili-avatar-img"
+                  alt=""
+                />
+              </div>
+            </div>
 
-
+            <div className="content-wrap">
+              {/* 用户名 */}
+              <div className="user-info">
+                <div className="user-name">{item.user.uname}</div>
+              </div>
+              {/* 评论内容 */}
+              <div className="root-reply">
+                <span className="reply-content">{item.content}</span>
+                <div className="reply-info">
+                  {/* 评论时间 */}
+                  <span className="reply-time">{item.ctime}</span>
+                  {/* 评论数量 */}
+                  <span className="reply-time">点赞数:{item.like}</span>
+                 {item.user.uid===user.uid && <span className="delete-btn" onClick={()=>{onDel(item.rpid)}}>删除</span>}
+                </div>
+              </div>
+            </div>
+          </div>)
+}
 const App = () => {
-  const [commentList,setCommentList]=useState(_.orderBy(defaultList,'like','desc'))
+  const {commentList,setCommentList}=useGetlist()
+  
   const [type,setType]=useState('hot')
   const [content,setContent]=useState('')
   const focuscontent=useRef(null)
+  // 删除评论
   function Clickbutton(rpid){
   setCommentList(commentList.filter(item=>item.rpid!==rpid))
 }
-  function Clickbutton(type){
+  function ClickbuttonType(type){
     setType(type)
     if(type==='hot'){
       //第一个参数：数组
@@ -101,7 +148,7 @@ const App = () => {
   function recordContent(value){
     setContent(value)
   }
-  function Clickbutton(){
+  function ClickbuttonSend(){
     setCommentList(
      [
        ...commentList,
@@ -136,7 +183,7 @@ const App = () => {
            {tabs.map(item=>( <span
             className={classNames('nav-item',{active:type===item.type})}
             key={item.type} 
-            onClick={()=>{Clickbutton(item.type)}}>{item.text}</span>))}
+            onClick={()=>{ClickbuttonType(item.type)}}>{item.text}</span>))}
           </li>
         </ul>
       </div>
@@ -161,7 +208,7 @@ const App = () => {
             />
             {/* 发布按钮 */}
             <div className="reply-box-send">
-              <div className="send-text" onClick={Clickbutton}>发布</div>
+              <div className="send-text" onClick={ClickbuttonSend}>发布</div>
             </div>
           </div>
         </div>
@@ -169,35 +216,8 @@ const App = () => {
         <div className="reply-list">
           {/* 评论项 */}
           {commentList.map(item=>( 
-            <div className="reply-item" key={item.rpid}>
-            {/* 头像 */}
-            <div className="root-reply-avatar">
-              <div className="bili-avatar">
-                <img
-                  className="bili-avatar-img"
-                  alt=""
-                />
-              </div>
-            </div>
-
-            <div className="content-wrap">
-              {/* 用户名 */}
-              <div className="user-info">
-                <div className="user-name">{item.user.uname}</div>
-              </div>
-              {/* 评论内容 */}
-              <div className="root-reply">
-                <span className="reply-content">{item.content}</span>
-                <div className="reply-info">
-                  {/* 评论时间 */}
-                  <span className="reply-time">{item.ctime}</span>
-                  {/* 评论数量 */}
-                  <span className="reply-time">点赞数:{item.like}</span>
-                 {item.user.uid===user.uid&&<span className="delete-btn" onClick={()=>{Clickbutton(item.rpid)}}>删除</span>}
-                </div>
-              </div>
-            </div>
-          </div>))}   
+            <Item item={item} key={item.rpid} onDel={Clickbutton}></Item>
+           ))}   
         </div>
       </div>
     </div>
